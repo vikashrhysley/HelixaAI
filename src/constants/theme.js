@@ -1,0 +1,26 @@
+export const THEMES = {
+  dark: {
+    bg:       'bg-[#28282B]',
+    sidebar:  'bg-[#28282B]',
+    chat:     'bg-[#28282B]',
+    card:     'bg-[#323237]',
+    input:    'bg-[#38383E]',
+    border:   'border-[#484850]',
+    text:     'text-[#e8e8f0]',
+    muted:    'text-[#7878a0]',
+    hover:    'hover:bg-[#38383E]',
+    msgBot:   'bg-[#323237]',
+  },
+  light: {
+    bg:       'bg-[#f8f7ff]',
+    sidebar:  'bg-[#f0f0fa]',
+    chat:     'bg-white',
+    card:     'bg-white',
+    input:    'bg-[#f4f4fc]',
+    border:   'border-[#e0e0f0]',
+    text:     'text-[#1a1a2e]',
+    muted:    'text-[#7878a0]',
+    hover:    'hover:bg-[#eeeeff]',
+    msgBot:   'bg-[#f3f3ff]',
+  },
+};
