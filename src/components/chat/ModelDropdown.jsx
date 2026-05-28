@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setModel, selectModel } from '../../store/slices/uiSlice';
-import { MODELS, PROVIDER_LABELS } from '../../constants/models';
+import { MODELS } from '../../constants/models';
 import { useTheme } from '../../hooks/useTheme';
 
 export default function ModelDropdown() {
@@ -11,11 +11,6 @@ export default function ModelDropdown() {
   const [open, setOpen] = useState(false);
 
   const current = MODELS.find((m) => m.id === modelId);
-  const groups = MODELS.reduce((acc, m) => {
-    const g = PROVIDER_LABELS[m.provider] ?? m.provider;
-    (acc[g] = acc[g] ?? []).push(m);
-    return acc;
-  }, {});
   const pillBg = dark ? 'bg-[#38383E]' : 'bg-[#e8e8ff]';
 
   return (
@@ -29,30 +24,27 @@ export default function ModelDropdown() {
       {open && (
         <>
           <div className="fixed inset-0 z-[98]" onClick={() => setOpen(false)}/>
-          <div className={`absolute bottom-9 right-0 z-[99] min-w-[220px] overflow-hidden rounded-xl border shadow-[0_8px_32px_rgba(0,0,0,0.22)] animate-fadeUp ${card} ${border}`}>
-            {Object.entries(groups).map(([group, models]) => (
-              <div key={group}>
-                <p className={`px-3.5 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.07em] ${muted}`}>{group}</p>
-                {models.map((m) => {
-                  const selected = m.id === modelId && !m.comingSoon;
-                  return (
-                    <div
-                      key={m.id}
-                      onClick={() => { if (!m.comingSoon) { dispatch(setModel(m.id)); setOpen(false); } }}
-                      className={`flex items-center gap-2 px-3.5 py-[9px] text-[13.5px] transition-colors ${m.comingSoon ? `cursor-default opacity-60 ${muted}` : `cursor-pointer ${text} ${hover}`}`}
-                    >
-                      {selected && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                      )}
-                      <span className={selected ? '' : 'ml-[22px]'}>{m.label}</span>
-                      {m.comingSoon && (
-                        <span className={`ml-auto rounded-md px-[7px] py-0.5 text-[10px] font-semibold text-[#6366f1] ${pillBg}`}>Soon</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+          <div className={`absolute bottom-9 right-0 z-[99] min-w-[230px] overflow-hidden rounded-xl border py-1 shadow-[0_8px_32px_rgba(0,0,0,0.22)] animate-fadeUp ${card} ${border}`}>
+            {MODELS.map((m) => {
+              const selected = m.id === modelId && !m.comingSoon;
+              return (
+                <div
+                  key={m.id}
+                  onClick={() => { if (!m.comingSoon) { dispatch(setModel(m.id)); setOpen(false); } }}
+                  className={`flex min-h-8 items-center gap-1.5 px-3 py-1.5 text-[13px] transition-colors ${m.comingSoon ? `cursor-default opacity-60 ${muted}` : `cursor-pointer ${text} ${hover}`}`}
+                >
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                    {selected && (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    )}
+                  </span>
+                  <span className="flex-1 whitespace-nowrap">{m.label}</span>
+                  {m.comingSoon && (
+                    <span className={`ml-1.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-[#6366f1] ${pillBg}`}>Soon</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </>
       )}

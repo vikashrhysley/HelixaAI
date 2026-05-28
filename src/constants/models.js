@@ -1,27 +1,19 @@
-// ─── AI Models ────────────────────────────────────────────────
 export const MODELS = [
-  // ── Anthropic Claude (live) ──
-  { id: 'claude-sonnet-4-20250514',  label: 'Claude Sonnet 4',  provider: 'anthropic', active: true },
-  { id: 'claude-opus-4-20250514',    label: 'Claude Opus 4',    provider: 'anthropic', active: true },
-  { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5', provider: 'anthropic', active: true },
-
-  // ── Meta LLaMA (coming soon) ──
-  { id: 'meta-llama/llama-3.3-70b-instruct',  label: 'LLaMA 3.3 70B',  provider: 'llama', active: false, comingSoon: true },
-  { id: 'meta-llama/llama-3.1-8b-instruct',   label: 'LLaMA 3.1 8B',   provider: 'llama', active: false, comingSoon: true },
-  { id: 'meta-llama/llama-3.2-vision-11b',    label: 'LLaMA 3.2 Vision',provider: 'llama', active: false, comingSoon: true },
+  { id: 'gpt-mini', label: 'OpenAI GPT-4o mini', provider: 'openai', active: true },
+  { id: 'gpt', label: 'OpenAI GPT-4o', provider: 'openai', active: true },
+  { id: 'claude', label: 'Claude Sonnet 4.6', provider: 'anthropic', active: true },
+  { id: 'claude-opus', label: 'Claude Opus 4.7', provider: 'anthropic', active: true },
+  { id: 'grok', label: 'xAI Grok', provider: 'xai', active: true },
+  { id: 'grok-mini', label: 'xAI Grok Mini', provider: 'xai', active: true },
+  { id: 'deepseek', label: 'DeepSeek', provider: 'deepseek', active: true },
+  { id: 'deepseek-r1', label: 'DeepSeek R1', provider: 'deepseek', active: true },
 ];
 
-export const DEFAULT_MODEL = MODELS[0].id;
+export const DEFAULT_MODEL = 'gpt-mini';
 
-// ─── Demo Credentials ─────────────────────────────────────────
-export const DEMO_USER = {
-  email:    'demo@helixtaai.com',
-  password: 'demo123',
-  name:     'Alex Morgan',
-};
-
-// ─── Provider Badges ──────────────────────────────────────────
 export const PROVIDER_LABELS = {
+  openai: 'OpenAI',
   anthropic: 'Anthropic',
-  llama:     'Meta LLaMA',
+  xai: 'xAI',
+  deepseek: 'DeepSeek',
 };

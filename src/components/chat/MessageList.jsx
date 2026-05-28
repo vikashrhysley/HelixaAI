@@ -12,9 +12,20 @@ export default function MessageList() {
   const { text, muted, msgBot } = useTheme();
   const bottomRef  = useRef(null);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [activeChat?.messages, loading]);
+  const visibleMessages = activeChat?.messages.filter((message) => (
+    message.role !== 'assistant'
+    || message.content?.trim()
+    || message.attachments?.length
+  )) ?? [];
+  const lastMessage = activeChat?.messages[activeChat.messages.length - 1];
+  const isAssistantWriting = lastMessage?.role === 'assistant' && Boolean(lastMessage.content?.trim());
+  const showThinking = loading && !isAssistantWriting;
+  const isEmpty = visibleMessages.length === 0;
+  const contentSignature = visibleMessages.map((message) => `${message.id}:${message.content}`).join('|');
 
-  const isEmpty = !activeChat || activeChat.messages.length === 0;
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [contentSignature, loading]);
 
   return (
     <div className="flex-1 overflow-y-auto py-5">
@@ -29,10 +40,10 @@ export default function MessageList() {
       )}
 
       <div className="mx-auto w-full max-w-[820px]">
-        {activeChat?.messages.map((msg) => (
+        {visibleMessages.map((msg) => (
           <MessageBubble key={msg.id} message={msg}/>
         ))}
-        {loading && (
+        {showThinking && (
           <div className="flex gap-3 px-5 py-2 animate-fadeUp">
             <BotAvatar/>
             <div className={`rounded-[16px_16px_16px_4px] px-3.5 py-2.5 ${msgBot}`}>

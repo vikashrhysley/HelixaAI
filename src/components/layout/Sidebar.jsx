@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { newChat, setActiveChat, deleteChat, selectChats, selectActiveChatId } from '../../store/slices/chatSlice';
+import { newChat, setActiveChat, setConversationMessages, deleteChat, selectChats, selectActiveChatId } from '../../store/slices/chatSlice';
 import { setSidebarOpen } from '../../store/slices/uiSlice';
-import { logout, selectUser } from '../../store/slices/authSlice';
+import { logout, selectAccessToken, selectUser } from '../../store/slices/authSlice';
+import { logoutUser } from '../../utils/authService';
+import { getConversation } from '../../utils/chatService';
 import { Avatar } from '../ui/Avatar';
 import IconButton from '../ui/IconButton';
 import { useTheme } from '../../hooks/useTheme';
@@ -19,9 +22,41 @@ export default function Sidebar({ collapsed = false }) {
   const chats = useSelector(selectChats);
   const activeId = useSelector(selectActiveChatId);
   const user = useSelector(selectUser);
+  const accessToken = useSelector(selectAccessToken);
+  const [loggingOut, setLoggingOut] = useState(false);
   const { dark, sidebar, border, text, muted, hover } = useTheme();
   const activeBg = dark ? 'bg-[#38383E]' : 'bg-[#e8e8ff]';
   const hoverText = dark ? 'hover:text-[#e8e8f0]' : 'hover:text-[#1a1a2e]';
+  const LogoutIcon = () => (
+    loggingOut
+      ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current"/>
+      : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+  );
+  const handleSelectChat = async (chat) => {
+    dispatch(setActiveChat(chat.id));
+
+    if (!chat.conversationId || chat.historyLoaded || !accessToken) return;
+
+    try {
+      const conversation = await getConversation(accessToken, chat.conversationId);
+      dispatch(setConversationMessages(conversation));
+    } catch (err) {
+      console.warn('Unable to load conversation:', err.message);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await logoutUser(accessToken);
+    } catch (err) {
+      console.warn('Logout API failed:', err.message);
+    } finally {
+      dispatch(logout());
+    }
+  };
 
   if (collapsed) {
     return (
@@ -38,29 +73,14 @@ export default function Sidebar({ collapsed = false }) {
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
         </IconButton>
 
-        <div className="mt-2.5 flex w-full flex-1 flex-col items-center gap-1 overflow-y-auto">
-          {chats.map((c) => {
-            const isActive = c.id === activeId;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                title={c.title}
-                onClick={() => dispatch(setActiveChat(c.id))}
-                className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-[9px] border-0 transition-colors ${isActive ? `${activeBg} text-[#6366f1]` : `${muted} ${hover} ${hoverText}`}`}
-              >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              </button>
-            );
-          })}
-        </div>
+        <div className="flex-1"/>
 
         <div className={`flex w-full flex-col items-center gap-1 border-t pt-2.5 ${border}`}>
           <div title={user?.name ?? 'User'}>
             <Avatar name={user?.name ?? 'User'} size={30}/>
           </div>
-          <IconButton title="Logout" onClick={() => dispatch(logout())} className="h-9 w-9">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <IconButton title={loggingOut ? 'Logging out...' : 'Logout'} onClick={handleLogout} className="h-9 w-9">
+            <LogoutIcon/>
           </IconButton>
         </div>
       </div>
@@ -93,7 +113,7 @@ export default function Sidebar({ collapsed = false }) {
           return (
             <div
               key={c.id}
-              onClick={() => dispatch(setActiveChat(c.id))}
+              onClick={() => handleSelectChat(c)}
               className={`flex cursor-pointer items-center justify-between gap-2.5 rounded-[10px] px-3 py-[9px] text-[13.5px] transition-colors ${isActive ? `${activeBg} text-[#6366f1]` : `${text} ${hover}`}`}
             >
               <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
@@ -115,8 +135,8 @@ export default function Sidebar({ collapsed = false }) {
             <p className={`truncate text-[13.5px] font-medium ${text}`}>{user?.name}</p>
             <p className={`truncate text-xs ${muted}`}>{user?.email}</p>
           </div>
-          <IconButton title="Logout" onClick={() => dispatch(logout())}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <IconButton title={loggingOut ? 'Logging out...' : 'Logout'} onClick={handleLogout}>
+            <LogoutIcon/>
           </IconButton>
         </div>
       </div>

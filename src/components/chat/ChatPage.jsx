@@ -1,6 +1,9 @@
-import { useSelector } from 'react-redux';
-import { selectActiveChat } from '../../store/slices/chatSlice';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { clearError, selectActiveChat, selectError, setConversationHistory } from '../../store/slices/chatSlice';
+import { selectAccessToken } from '../../store/slices/authSlice';
 import { selectSidebarOpen } from '../../store/slices/uiSlice';
+import { getConversation, listConversations } from '../../utils/chatService';
 import Sidebar    from '../layout/Sidebar';
 import Header     from '../layout/Header';
 import MessageList from '../chat/MessageList';
@@ -8,10 +11,50 @@ import ChatInput   from '../chat/ChatInput';
 import { useTheme } from '../../hooks/useTheme';
 
 export default function ChatPage() {
-  const { bg, sidebar, border, text, muted } = useTheme();
+  const dispatch = useDispatch();
+  const { dark, bg, sidebar, border, text, muted, hover } = useTheme();
   const sidebarOpen = useSelector(selectSidebarOpen);
   const activeChat = useSelector(selectActiveChat);
+  const error = useSelector(selectError);
+  const accessToken = useSelector(selectAccessToken);
   const hasUserMessages = activeChat?.messages?.some((message) => message.role === 'user');
+
+  useEffect(() => {
+    if (!accessToken) return undefined;
+
+    let isActive = true;
+    listConversations(accessToken)
+      .then(async (conversations) => {
+        if (!isActive) return;
+        const conversationDetails = await Promise.all(
+          conversations.map((conversation) => (
+            getConversation(accessToken, conversation.id).catch((err) => {
+              console.warn('Unable to load conversation:', err.message);
+              return null;
+            })
+          ))
+        );
+
+        if (isActive) dispatch(setConversationHistory(conversationDetails.filter(Boolean)));
+      })
+      .catch((err) => {
+        console.warn('Unable to load chat history:', err.message);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [accessToken, dispatch]);
+
+  useEffect(() => {
+    if (!error) return undefined;
+
+    const timer = setTimeout(() => {
+      dispatch(clearError());
+    }, 5200);
+
+    return () => clearTimeout(timer);
+  }, [dispatch, error]);
 
   return (
     <div className={`flex h-screen overflow-hidden font-sans ${bg}`}>
@@ -21,6 +64,22 @@ export default function ChatPage() {
 
       <div className="relative flex flex-1 flex-col overflow-hidden">
         <Header/>
+        {error && (
+          <div className="pointer-events-none absolute right-5 top-[72px] z-[80] w-[min(360px,calc(100%-40px))] animate-fadeUp">
+            <div className={`pointer-events-auto flex items-start gap-3 rounded-2xl border px-4 py-3 shadow-[0_18px_48px_rgba(16,16,32,0.18)] ${dark ? 'border-red-400/20 bg-[#323237]/95' : 'border-red-100 bg-white/95'} backdrop-blur`}>
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-500">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="7" x2="12" y2="13"/><circle cx="12" cy="17" r="1"/></svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`text-sm font-semibold ${text}`}>Model response failed</p>
+                <p className={`mt-0.5 text-[13px] leading-5 ${muted}`}>{error}</p>
+              </div>
+              <button type="button" onClick={() => dispatch(clearError())} className={`-mr-1 mt-0.5 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent ${muted} ${hover}`} aria-label="Close error">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+        )}
         {hasUserMessages ? (
           <>
             <MessageList/>

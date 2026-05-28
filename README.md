@@ -71,7 +71,7 @@ cp .env.example .env
 npm start
 ```
 
-**Demo login:** `demo@helixtaai.com` / `demo123`
+Use the sign-up page to create an account, then sign in with your API credentials.
 
 ---
 

@@ -1,10 +1,22 @@
 import { useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { addUserMessage, addAssistantMessage, setError, selectActiveChat } from '../../store/slices/chatSlice';
+import {
+  addUserMessage,
+  appendAssistantMessageChunk,
+  finishAssistantMessage,
+  removeMessage,
+  setChatConversationId,
+  setError,
+  startAssistantMessage,
+  selectActiveChat,
+} from '../../store/slices/chatSlice';
+import { selectAccessToken } from '../../store/slices/authSlice';
 import { selectModel } from '../../store/slices/uiSlice';
-import { sendMessage as aiSend } from '../../utils/aiService';
+import { startChat, streamChat } from '../../utils/chatService';
+import { MODELS } from '../../constants/models';
 import { useTheme } from '../../hooks/useTheme';
 import { useSpeech } from '../../hooks/useSpeech';
+import { generateId } from '../../utils/helpers';
 import PlusMenu from './PlusMenu';
 import ModelDropdown from './ModelDropdown';
 import IconButton from '../ui/IconButton';
@@ -12,6 +24,7 @@ import IconButton from '../ui/IconButton';
 export default function ChatInput({ centered = false }) {
   const dispatch = useDispatch();
   const activeChat = useSelector(selectActiveChat);
+  const accessToken = useSelector(selectAccessToken);
   const modelId = useSelector(selectModel);
   const { chat, border, input: inputClass, text, muted } = useTheme();
 
@@ -45,19 +58,77 @@ export default function ChatInput({ centered = false }) {
 
     dispatch(addUserMessage({ content, attachments: atts }));
 
-    const history = [
-      ...(activeChat?.messages ?? []),
-      { role: 'user', content: content || '(file attached)' },
-    ].map((m) => ({ role: m.role, content: m.content }));
+    let assistantMessageId = null;
+    let responseReceived = false;
+    let firstResponseTimer = null;
+    const selectedModel = MODELS.find((model) => model.id === modelId);
+    const modelLabel = selectedModel?.label || modelId;
+    const timeoutMessage = `${modelLabel} is not responding right now. Please try again or choose another model.`;
+    const controller = new AbortController();
 
     try {
-      const reply = await aiSend(modelId, history);
-      dispatch(addAssistantMessage(reply));
+      if (!accessToken) {
+        throw new Error('Your session has expired. Please log in again.');
+      }
+
+      let conversationId = activeChat?.conversationId;
+      const chatId = activeChat?.id;
+
+      if (!conversationId) {
+        const conversation = await startChat(accessToken);
+        conversationId = conversation.id;
+        if (chatId) {
+          dispatch(setChatConversationId({ chatId, conversationId }));
+        }
+      }
+
+      assistantMessageId = generateId();
+      dispatch(startAssistantMessage({ id: assistantMessageId }));
+      firstResponseTimer = setTimeout(() => {
+        controller.abort();
+      }, 25000);
+
+      await streamChat({
+        accessToken,
+        conversationId,
+        message: content || '(file attached)',
+        model: modelId,
+        signal: controller.signal,
+        onChunk: (delta) => {
+          if (delta) {
+            responseReceived = true;
+            if (firstResponseTimer) {
+              clearTimeout(firstResponseTimer);
+              firstResponseTimer = null;
+            }
+          }
+          dispatch(appendAssistantMessageChunk({ id: assistantMessageId, delta }));
+        },
+        onDone: () => {
+          if (firstResponseTimer) {
+            clearTimeout(firstResponseTimer);
+            firstResponseTimer = null;
+          }
+          dispatch(finishAssistantMessage());
+        },
+      });
+
+      if (!responseReceived) {
+        throw new Error(`${modelLabel} did not return a response. Please try again or choose another model.`);
+      }
+
+      dispatch(finishAssistantMessage());
     } catch (err) {
-      dispatch(addAssistantMessage(`Warning: ${err.message}`));
-      dispatch(setError(err.message));
+      const message = err.name === 'AbortError' ? timeoutMessage : err.message;
+      if (assistantMessageId) {
+        dispatch(removeMessage(assistantMessageId));
+        dispatch(finishAssistantMessage());
+      }
+      dispatch(setError(message));
+    } finally {
+      if (firstResponseTimer) clearTimeout(firstResponseTimer);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const onKey = (e) => {

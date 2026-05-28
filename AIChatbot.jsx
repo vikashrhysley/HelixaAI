@@ -8,8 +8,6 @@ const MODELS = [
   { id: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
 ];
 
-const DEMO_USER = { email: "demo@aichat.com", password: "demo123", name: "Alex Morgan" };
-
 function generateId() {
   return Math.random().toString(36).slice(2, 10);
 }
@@ -85,10 +83,10 @@ function LoginPage({ onLogin, dark }) {
     setError("");
     setLoading(true);
     await new Promise(r => setTimeout(r, 800));
-    if (email === DEMO_USER.email && password === DEMO_USER.password) {
-      onLogin({ email, name: DEMO_USER.name });
+    if (email.trim() && password.trim()) {
+      onLogin({ email, name: email.split("@")[0] || "User" });
     } else {
-      setError("Invalid credentials. Try demo@aichat.com / demo123");
+      setError("Enter your email and password.");
     }
     setLoading(false);
   };
@@ -138,7 +136,7 @@ function LoginPage({ onLogin, dark }) {
         <form onSubmit={handle} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
             <label style={{ fontSize: 13, fontWeight: 500, color: muted, display: "block", marginBottom: 6 }}>Email</label>
-            <input className="login-input" type="email" placeholder="demo@aichat.com" value={email} onChange={e => setEmail(e.target.value)} required/>
+            <input className="login-input" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required/>
           </div>
           <div>
             <label style={{ fontSize: 13, fontWeight: 500, color: muted, display: "block", marginBottom: 6 }}>Password</label>
@@ -166,9 +164,6 @@ function LoginPage({ onLogin, dark }) {
             ) : "Sign in"}
           </button>
         </form>
-        <p style={{ textAlign: "center", fontSize: 13, color: muted, marginTop: "1.25rem" }}>
-          Demo: <span style={{ color: accent }}>demo@aichat.com</span> / <span style={{ color: accent }}>demo123</span>
-        </p>
       </div>
     </div>
   );
