@@ -78,7 +78,7 @@ export async function streamChat({ accessToken, conversationId, message, model, 
   const decoder = new TextDecoder();
   let buffer = '';
 
-  const handleLine = (line) => {
+  const handleLine = async (line) => {
     const trimmed = line.trim();
     if (!trimmed || !trimmed.startsWith('data:')) return;
 
@@ -96,9 +96,9 @@ export async function streamChat({ accessToken, conversationId, message, model, 
       throw new Error(event.message || event.detail || 'The selected model failed to respond.');
     }
 
-    if (event.type === 'meta') onMeta?.(event);
-    if (event.type === 'chunk') onChunk?.(event.delta ?? '');
-    if (event.type === 'done') onDone?.(event);
+    if (event.type === 'meta') await onMeta?.(event);
+    if (event.type === 'chunk') await onChunk?.(event.delta ?? '');
+    if (event.type === 'done') await onDone?.(event);
   };
 
   while (true) {
@@ -107,10 +107,12 @@ export async function streamChat({ accessToken, conversationId, message, model, 
 
     const lines = buffer.split(/\r?\n/);
     buffer = lines.pop() ?? '';
-    lines.forEach(handleLine);
+    for (const line of lines) {
+      await handleLine(line);
+    }
 
     if (done) break;
   }
 
-  if (buffer.trim()) handleLine(buffer);
+  if (buffer.trim()) await handleLine(buffer);
 }

@@ -1,6 +1,23 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { generateId, truncate } from '../../utils/helpers';
 
+const DELETED_CONVERSATIONS_KEY = 'helixta_deleted_conversations';
+
+const loadDeletedConversationIds = () => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const value = JSON.parse(window.localStorage.getItem(DELETED_CONVERSATIONS_KEY));
+    return Array.isArray(value) ? value.map(String) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveDeletedConversationIds = (ids) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(DELETED_CONVERSATIONS_KEY, JSON.stringify(ids));
+};
+
 const makeWelcomeChat = () => ({
   id: 'c1',
   conversationId: null,
@@ -49,6 +66,9 @@ const mapConversationMessages = (messages = []) => messages.map((message) => ({
 }));
 
 const hasMessageContent = (messages = []) => messages.some((message) => message.content?.trim());
+const isDeletedConversation = (state, conversationId) => (
+  state.deletedConversationIds.includes(String(conversationId))
+);
 
 const mapLoadedConversation = (conversation, existingChat) => {
   const messages = mapConversationMessages(conversation.messages);
@@ -69,6 +89,7 @@ const chatSlice = createSlice({
     activeChatId: 'c1',
     loading: false,
     error: null,
+    deletedConversationIds: loadDeletedConversationIds(),
   },
   reducers: {
     newChat(state) {
@@ -87,10 +108,12 @@ const chatSlice = createSlice({
       }
     },
     setConversationList(state, { payload: conversations = [] }) {
-      const apiChats = conversations.map((conversation) => {
-        const existingChat = state.chats.find((chat) => chat.conversationId === conversation.id);
-        return mapConversation(conversation, existingChat);
-      });
+      const apiChats = conversations
+        .filter((conversation) => !isDeletedConversation(state, conversation.id))
+        .map((conversation) => {
+          const existingChat = state.chats.find((chat) => chat.conversationId === conversation.id);
+          return mapConversation(conversation, existingChat);
+        });
       const apiIds = new Set(apiChats.map((chat) => chat.conversationId));
       const localChats = state.chats.filter((chat) => (
         !chat.conversationId
@@ -104,7 +127,10 @@ const chatSlice = createSlice({
     },
     setConversationHistory(state, { payload: conversations = [] }) {
       const apiChats = conversations
-        .filter((conversation) => hasMessageContent(conversation.messages))
+        .filter((conversation) => (
+          !isDeletedConversation(state, conversation.id)
+          && hasMessageContent(conversation.messages)
+        ))
         .map((conversation) => {
           const existingChat = state.chats.find((chat) => chat.conversationId === conversation.id);
           return mapLoadedConversation(conversation, existingChat);
@@ -121,6 +147,8 @@ const chatSlice = createSlice({
       }
     },
     setConversationMessages(state, { payload: conversation }) {
+      if (isDeletedConversation(state, conversation.id)) return;
+
       const messages = mapConversationMessages(conversation.messages);
       const chat = state.chats.find((item) => item.conversationId === conversation.id);
       if (!chat) {
@@ -142,9 +170,23 @@ const chatSlice = createSlice({
       chat.ts = getTimestamp(conversation.created_at);
     },
     deleteChat(state, { payload: id }) {
+      const chat = state.chats.find((c) => c.id === id);
+      if (chat?.conversationId) {
+        const deletedId = String(chat.conversationId);
+        if (!state.deletedConversationIds.includes(deletedId)) {
+          state.deletedConversationIds.push(deletedId);
+          saveDeletedConversationIds(state.deletedConversationIds);
+        }
+      }
+
       state.chats = state.chats.filter((c) => c.id !== id);
       if (state.activeChatId === id && state.chats.length > 0) {
         state.activeChatId = state.chats[0].id;
+      }
+      if (state.chats.length === 0) {
+        const welcomeChat = makeWelcomeChat();
+        state.chats = [welcomeChat];
+        state.activeChatId = welcomeChat.id;
       }
     },
     addUserMessage(state, { payload: { content, attachments = [] } }) {
@@ -174,6 +216,20 @@ const chatSlice = createSlice({
       if (!chat) return;
       const message = chat.messages.find((m) => m.id === id);
       if (message) message.content += delta;
+    },
+    updateMessageContent(state, { payload: { id, content } }) {
+      const chat = state.chats.find((c) => c.id === state.activeChatId);
+      if (!chat) return;
+      const message = chat.messages.find((m) => m.id === id);
+      if (!message) return;
+
+      message.content = content;
+      if (message.role === 'user') {
+        const firstUserMessage = chat.messages.find((m) => m.role === 'user');
+        if (firstUserMessage?.id === id && content.trim()) {
+          chat.title = truncate(content.trim());
+        }
+      }
     },
     removeMessage(state, { payload: id }) {
       const chat = state.chats.find((c) => c.id === state.activeChatId);
@@ -208,6 +264,7 @@ export const {
   addAssistantMessage,
   startAssistantMessage,
   appendAssistantMessageChunk,
+  updateMessageContent,
   removeMessage,
   finishAssistantMessage,
   setLoading,

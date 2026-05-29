@@ -21,6 +21,10 @@ import PlusMenu from './PlusMenu';
 import ModelDropdown from './ModelDropdown';
 import IconButton from '../ui/IconButton';
 
+const STREAM_WORD_DELAY_MS = 22;
+const splitForTyping = (value) => value.match(/\s+|[^\s]+/g) || [];
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export default function ChatInput({ centered = false }) {
   const dispatch = useDispatch();
   const activeChat = useSelector(selectActiveChat);
@@ -33,6 +37,8 @@ export default function ChatInput({ centered = false }) {
   const [loading, setLoading] = useState(false);
   const [plusOpen, setPlusOpen] = useState(false);
   const textareaRef = useRef(null);
+  const streamControllerRef = useRef(null);
+  const stopRequestedRef = useRef(false);
 
   const { listening, toggle: toggleMic } = useSpeech((textValue) =>
     setInput((prev) => prev + textValue)
@@ -55,6 +61,7 @@ export default function ChatInput({ centered = false }) {
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setLoading(true);
     setPlusOpen(false);
+    stopRequestedRef.current = false;
 
     dispatch(addUserMessage({ content, attachments: atts }));
 
@@ -65,6 +72,7 @@ export default function ChatInput({ centered = false }) {
     const modelLabel = selectedModel?.label || modelId;
     const timeoutMessage = `${modelLabel} is not responding right now. Please try again or choose another model.`;
     const controller = new AbortController();
+    streamControllerRef.current = controller;
 
     try {
       if (!accessToken) {
@@ -94,7 +102,7 @@ export default function ChatInput({ centered = false }) {
         message: content || '(file attached)',
         model: modelId,
         signal: controller.signal,
-        onChunk: (delta) => {
+        onChunk: async (delta) => {
           if (delta) {
             responseReceived = true;
             if (firstResponseTimer) {
@@ -102,7 +110,16 @@ export default function ChatInput({ centered = false }) {
               firstResponseTimer = null;
             }
           }
-          dispatch(appendAssistantMessageChunk({ id: assistantMessageId, delta }));
+          const pieces = splitForTyping(delta);
+          for (const piece of pieces) {
+            if (stopRequestedRef.current || controller.signal.aborted) {
+              const abortError = new Error('Response stopped.');
+              abortError.name = 'AbortError';
+              throw abortError;
+            }
+            dispatch(appendAssistantMessageChunk({ id: assistantMessageId, delta: piece }));
+            await wait(STREAM_WORD_DELAY_MS);
+          }
         },
         onDone: () => {
           if (firstResponseTimer) {
@@ -119,16 +136,30 @@ export default function ChatInput({ centered = false }) {
 
       dispatch(finishAssistantMessage());
     } catch (err) {
-      const message = err.name === 'AbortError' ? timeoutMessage : err.message;
-      if (assistantMessageId) {
-        dispatch(removeMessage(assistantMessageId));
+      if (err.name === 'AbortError' && stopRequestedRef.current) {
+        if (assistantMessageId && !responseReceived) {
+          dispatch(removeMessage(assistantMessageId));
+        }
         dispatch(finishAssistantMessage());
+      } else {
+        const message = err.name === 'AbortError' ? timeoutMessage : err.message;
+        if (assistantMessageId) {
+          dispatch(removeMessage(assistantMessageId));
+          dispatch(finishAssistantMessage());
+        }
+        dispatch(setError(message));
       }
-      dispatch(setError(message));
     } finally {
       if (firstResponseTimer) clearTimeout(firstResponseTimer);
+      streamControllerRef.current = null;
+      stopRequestedRef.current = false;
       setLoading(false);
     }
+  };
+
+  const stopResponse = () => {
+    stopRequestedRef.current = true;
+    streamControllerRef.current?.abort();
   };
 
   const onKey = (e) => {
@@ -172,29 +203,37 @@ export default function ChatInput({ centered = false }) {
         />
 
         <div className="flex items-center gap-1">
-          <div className="relative">
+          {/* <div className="relative">
             <IconButton onClick={() => setPlusOpen((p) => !p)} title="Attachments" active={plusOpen}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 5v14M5 12h14"/></svg>
             </IconButton>
             <PlusMenu open={plusOpen} onClose={() => setPlusOpen(false)} onFile={onFile} onScreenshot={onScreenshot}/>
-          </div>
+          </div> */}
 
-          <IconButton onClick={toggleMic} title={listening ? 'Stop' : 'Voice input'} danger={listening} className={listening ? 'animate-pulse2' : ''}>
+          {/* <IconButton onClick={toggleMic} title={listening ? 'Stop' : 'Voice input'} danger={listening} className={listening ? 'animate-pulse2' : ''}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="9" y="2" width="6" height="12" rx="3"/>
               <path d="M5 10a7 7 0 0 0 14 0M12 19v3M9 22h6"/>
             </svg>
-          </IconButton>
+          </IconButton> */}
 
           <div className="flex-1"/>
 
           <ModelDropdown/>
 
-          <button onClick={send} disabled={!canSend} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border-0 transition-colors ${canSend ? 'cursor-pointer bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-white' : `cursor-default ${inputClass} ${muted}`}`}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-          </button>
+          {loading ? (
+            <button onClick={stopResponse} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] border-0 bg-[#ef4444] text-white transition-colors hover:bg-[#dc2626]" title="Stop response" aria-label="Stop response">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2"/>
+              </svg>
+            </button>
+          ) : (
+            <button onClick={send} disabled={!canSend} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border-0 transition-colors ${canSend ? 'cursor-pointer bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-white' : `cursor-default ${inputClass} ${muted}`}`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     </div>
