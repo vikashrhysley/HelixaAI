@@ -130,7 +130,7 @@ function LoginPage({ onLogin, dark }) {
               <path d="M10 18c1.2 1.5 6.8 1.5 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: text, fontFamily: "'Space Grotesk', sans-serif" }}>Welcome to HelixtaAI</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: text, fontFamily: "'Space Grotesk', sans-serif" }}>Welcome to Chathelix</h1>
           <p style={{ fontSize: 14, color: muted, marginTop: 6 }}>Sign in to start chatting</p>
         </div>
         <form onSubmit={handle} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -175,7 +175,7 @@ export default function AIChatApp() {
   const [dark, setDark] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chats, setChats] = useState([
-    { id: "c1", title: "Getting started", messages: [{ id: "m0", role: "assistant", content: "Hello! I'm HelixtaAI, your intelligent assistant. How can I help you today? ✨", ts: Date.now() - 60000 }], ts: Date.now() - 60000 },
+    { id: "c1", title: "Getting started", messages: [{ id: "m0", role: "assistant", content: "Hello! I'm Chathelix, your intelligent assistant. How can I help you today? ✨", ts: Date.now() - 60000 }], ts: Date.now() - 60000 },
   ]);
   const [activeChatId, setActiveChatId] = useState("c1");
   const [input, setInput] = useState("");
@@ -254,7 +254,7 @@ export default function AIChatApp() {
         body: JSON.stringify({
           model: model.startsWith("claude") ? model : "claude-sonnet-4-20250514",
           max_tokens: 1000,
-          system: "You are HelixtaAI, a helpful, concise, and friendly AI assistant. Respond naturally and helpfully.",
+          system: "You are Chathelix, a helpful, concise, and friendly AI assistant. Respond naturally and helpfully.",
           messages: msgHistory
         })
       });
@@ -344,7 +344,7 @@ export default function AIChatApp() {
             <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/><circle cx="9" cy="10.5" r="1.5" fill="white"/><circle cx="15" cy="10.5" r="1.5" fill="white"/><path d="M9 15c.8 1.2 5.2 1.2 6 0" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
             </div>
-            <span style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 16, color: text }}>HelixtaAI</span>
+            <span style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 16, color: text }}>Chathelix</span>
           </div>
           <button className="icon-btn" onClick={() => setSidebarOpen(false)} title="Collapse sidebar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -495,7 +495,7 @@ export default function AIChatApp() {
               value={input}
               onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 180) + "px"; }}
               onKeyDown={handleKey}
-              placeholder="Message HelixtaAI..."
+              placeholder="Message Chathelix..."
               style={{ maxHeight: 180 }}
             />
 
@@ -584,7 +584,7 @@ export default function AIChatApp() {
               </button>
             </div>
           </div>
-          <p style={{ fontSize: 11.5, color: muted, textAlign: "center", marginTop: 8 }}>HelixtaAI can make mistakes. Consider verifying important info.</p>
+          <p style={{ fontSize: 11.5, color: muted, textAlign: "center", marginTop: 8 }}>Chathelix can make mistakes. Consider verifying important info.</p>
         </div>
       </div>
 
@@ -595,3 +595,4 @@ export default function AIChatApp() {
     </div>
   );
 }
+

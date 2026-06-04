@@ -198,7 +198,7 @@ export default function ChatInput({ centered = false }) {
           value={input}
           onChange={(e) => { setInput(e.target.value); autoResize(); }}
           onKeyDown={onKey}
-          placeholder="Message HelixtaAI..."
+          placeholder="Message Chathelix..."
           className={`max-h-[180px] w-full resize-none border-0 bg-transparent font-sans text-[14.5px] leading-[1.6] outline-none placeholder:text-[#7878a0] ${text}`}
         />
 
@@ -239,3 +239,4 @@ export default function ChatInput({ centered = false }) {
     </div>
   );
 }
+

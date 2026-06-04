@@ -27,7 +27,7 @@ const makeWelcomeChat = () => ({
     {
       id: 'm0',
       role: 'assistant',
-      content: 'Hello! I\'m HelixtaAI, your intelligent assistant. How can I help you today?',
+      content: 'Hello! I\'m Chathelix, your intelligent assistant. How can I help you today?',
       attachments: [],
       ts: Date.now(),
     },
@@ -278,3 +278,4 @@ export const selectActiveChatId = (s) => s.chat.activeChatId;
 export const selectActiveChat = (s) => s.chat.chats.find((c) => c.id === s.chat.activeChatId);
 export const selectLoading = (s) => s.chat.loading;
 export const selectError = (s) => s.chat.error;
+

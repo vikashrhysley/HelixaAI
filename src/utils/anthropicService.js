@@ -19,7 +19,7 @@ export async function callAnthropic(modelId, messages) {
       model: modelId,
       max_tokens: 1000,
       system:
-        'You are HelixtaAI, a helpful, concise, and friendly AI assistant. Respond naturally and helpfully.',
+        'You are Chathelix, a helpful, concise, and friendly AI assistant. Respond naturally and helpfully.',
       messages,
     }),
   });
@@ -32,3 +32,4 @@ export async function callAnthropic(modelId, messages) {
   const data = await response.json();
   return data.content?.[0]?.text ?? 'No response received.';
 }
+

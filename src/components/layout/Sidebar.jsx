@@ -61,7 +61,7 @@ export default function Sidebar({ collapsed = false }) {
   if (collapsed) {
     return (
       <div className={`flex h-full flex-col items-center px-1.5 py-3 ${sidebar}`}>
-        <div className="mb-2" title="HelixtaAI">
+        <div className="mb-2" title="Chathelix">
           <LogoMark size={32}/>
         </div>
 
@@ -92,7 +92,7 @@ export default function Sidebar({ collapsed = false }) {
       <div className="flex items-center gap-2 px-3 pb-2 pt-4">
         <div className="flex flex-1 items-center gap-2">
           <LogoMark/>
-          <span className={`font-display text-base font-bold ${text}`}>HelixtaAI</span>
+          <span className={`font-display text-base font-bold ${text}`}>Chathelix</span>
         </div>
         <IconButton onClick={() => dispatch(setSidebarOpen(false))} title="Collapse sidebar">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -143,3 +143,4 @@ export default function Sidebar({ collapsed = false }) {
     </div>
   );
 }
+

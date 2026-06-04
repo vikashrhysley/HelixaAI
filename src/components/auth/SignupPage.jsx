@@ -118,7 +118,7 @@ export default function SignupPage({ onShowLogin, onSignupSuccess }) {
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="white" strokeWidth="2"/><circle cx="10" cy="12.5" r="2" fill="white"/><circle cx="18" cy="12.5" r="2" fill="white"/><path d="M10 18c1.2 1.5 6.8 1.5 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
           </div>
           <h1 className={`font-display text-2xl font-bold ${text}`}>Create your account</h1>
-          <p className={`mt-1.5 text-sm ${muted}`}>Start chatting with HelixtaAI</p>
+          <p className={`mt-1.5 text-sm ${muted}`}>Start chatting with Chathelix</p>
         </div>
 
         <form onSubmit={handle} className="flex flex-col gap-3.5" noValidate>
@@ -176,3 +176,4 @@ export default function SignupPage({ onShowLogin, onSignupSuccess }) {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-# HelixtaAI — Component-wise AI Chatbot
+# Chathelix — Component-wise AI Chatbot
 
 A production-grade AI chatbot built with **React + Redux + Tailwind CSS**, inspired by ChatGPT and Claude.
 
@@ -136,3 +136,4 @@ No code changes needed — `aiService.js` auto-routes by model provider.
 - **Anthropic API** — Claude models
 - **LLaMA (Groq/Together/Ollama)** — coming soon
 - **Web Speech API** — mic input (browser native)
+

@@ -57,7 +57,7 @@ export default function LoginPage({ onShowSignup, notice = '', initialIdentifier
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6]">
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="white" strokeWidth="2"/><circle cx="10" cy="12.5" r="2" fill="white"/><circle cx="18" cy="12.5" r="2" fill="white"/><path d="M10 18c1.2 1.5 6.8 1.5 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
           </div>
-          <h1 className={`font-display text-2xl font-bold ${text}`}>Welcome to HelixtaAI</h1>
+          <h1 className={`font-display text-2xl font-bold ${text}`}>Welcome to Chathelix</h1>
           <p className={`mt-1.5 text-sm ${muted}`}>Sign in to start chatting</p>
         </div>
 
@@ -103,3 +103,4 @@ export default function LoginPage({ onShowSignup, notice = '', initialIdentifier
     </div>
   );
 }
+
